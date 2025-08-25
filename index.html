@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt Library (HTML Version)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .modal-fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        /* Hide all pages by default */
+        .page { display: none; }
+        /* Show the active page */
+        .page.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-900 font-sans text-gray-200">
+
+    <!-- Main Page Container -->
+    <div id="main-page" class="page active">
+        <div class="container mx-auto px-4 py-8">
+            <header class="text-center mb-12 relative">
+                <h1 class="text-5xl font-extrabold text-white tracking-tight">Prompt Library</h1>
+                <p class="text-indigo-400 mt-2 text-lg">Your source for creative inspiration</p>
+                <button id="add-new-prompt-btn" class="absolute top-0 right-0 mt-2 px-4 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-900 focus:ring-green-500 transition-all">+ Add New Prompt</button>
+            </header>
+
+            <div class="flex flex-col md:flex-row gap-8">
+                <!-- Sidebar -->
+                <aside id="sidebar-container" class="w-full md:w-64 bg-gray-900 p-6 rounded-lg shadow-lg md:sticky top-6 h-fit">
+                    <!-- Categories will be rendered here by JS -->
+                </aside>
+
+                <!-- Main Content -->
+                <main class="flex-1">
+                    <div class="relative mb-8">
+                        <input type="text" id="search-input" placeholder="Search prompts..." class="w-full bg-gray-800 border-2 border-gray-700 text-white rounded-full py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                        <div class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg></div>
+                    </div>
+                    <div id="prompts-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <!-- Prompts will be rendered here by JS -->
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Page Container -->
+    <div id="form-page" class="page">
+        <div class="flex items-center justify-center min-h-screen py-8">
+            <div class="w-full max-w-2xl bg-gray-800 p-8 rounded-lg shadow-lg">
+                <h1 id="form-title" class="text-3xl font-bold text-white mb-6"></h1>
+                <form id="prompt-form" class="space-y-6">
+                    <!-- Hidden input for editing -->
+                    <input type="hidden" id="edit-prompt-id" name="id">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="title" class="block text-sm font-medium text-gray-300">Title</label>
+                            <input type="text" id="title" name="title" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label for="category" class="block text-sm font-medium text-gray-300">Category</label>
+                            <input type="text" id="category" name="category" list="category-list" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <datalist id="category-list"></datalist>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="model" class="block text-sm font-medium text-gray-300">AI Model</label>
+                        <select id="model" name="model" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500">
+                            <option>Midjourney</option>
+                            <option>ImageFX (Imagen)</option>
+                            <option>DALL-E 3</option>
+                            <option>Stable Diffusion</option>
+                            <option>Whisk</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300">Image URL(s) <span class="text-gray-400">(one per line)</span></label>
+                        <textarea id="imageUrls" name="imageUrls" rows="3" required placeholder="https://example.com/image1.png&#10;https://example.com/image2.png" class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="prompt" class="block text-sm font-medium text-gray-300">Prompt Text</label>
+                        <textarea id="prompt" name="prompt" rows="6" required class="mt-1 block w-full bg-gray-700 border-gray-600 rounded-md shadow-sm text-white focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                    </div>
+                    <div class="flex justify-between items-center pt-4">
+                        <button type="button" class="cancel-btn text-gray-400 hover:text-white transition-colors">← Cancel</button>
+                        <button type="submit" class="px-6 py-2 bg-green-500 text-white font-semibold rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-green-500">Save Prompt</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="image-modal" class="hidden fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+        <div class="relative max-w-4xl max-h-full modal-fade-in">
+            <img id="modal-img" src="" alt="Enlarged view" class="rounded-lg shadow-2xl max-w-full max-h-[90vh] object-contain" />
+            <button id="modal-close" class="absolute -top-4 -right-4 bg-white text-gray-900 rounded-full p-2 hover:bg-gray-200 transition-transform duration-200 hover:scale-110 focus:outline-none"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+            <button id="modal-prev" class="hidden absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 text-gray-900 rounded-full p-2 hover:bg-opacity-75 transition-transform duration-200 hover:scale-110 focus:outline-none -ml-12"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg></button>
+            <button id="modal-next" class="hidden absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-50 text-gray-900 rounded-full p-2 hover:bg-opacity-75 transition-transform duration-200 hover:scale-110 focus:outline-none -mr-12"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" /></svg></button>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+
+        let promptsData = [];
+
+        // --- 1. DATA STORE ---
+        // Load data from the external prompts.json file.
+        // This requires the HTML file to be served by a web server (e.g., VS Code Live Server).
+        try {
+            const response = await fetch('prompts.json');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            promptsData = await response.json();
+        } catch (error) {
+            console.error("Could not load prompts.json:", error);
+            const container = document.getElementById('prompts-grid-container') || document.body;
+            container.innerHTML = `<div class="col-span-full text-center py-16 bg-red-800 rounded-lg"><h3 class="text-2xl font-bold text-white">Failed to load prompts.json</h3><p class="text-gray-300 mt-2">Please make sure the file exists and you are running this from a local web server.</p></div>`;
+            return; // Stop execution if data fails to load
+        }
+        
+        // --- 2. STATE MANAGEMENT ---
+        let currentCategory = 'All';
+        let currentSearchTerm = '';
+
+        // --- 3. DOM ELEMENTS ---
+        const mainPage = document.getElementById('main-page');
+        const formPage = document.getElementById('form-page');
+        const promptsGrid = document.getElementById('prompts-grid-container');
+        const sidebarContainer = document.getElementById('sidebar-container');
+        const searchInput = document.getElementById('search-input');
+        const addNewPromptBtn = document.getElementById('add-new-prompt-btn');
+        const form = document.getElementById('prompt-form');
+        const formTitle = document.getElementById('form-title');
+        const categoryDatalist = document.getElementById('category-list');
+        const imageModal = document.getElementById('image-modal');
+
+        // --- 4. RENDERING FUNCTIONS ---
+
+        const renderSidebar = () => {
+            const categories = ['All', ...new Set(promptsData.map(p => p.category))];
+            let sidebarHTML = `<h2 class="text-2xl font-bold text-white mb-6">Categories</h2><nav class="space-y-2">`;
+            categories.forEach(category => {
+                const isActive = category === currentCategory;
+                const activeClass = isActive ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-300 hover:bg-gray-700 hover:text-white';
+                sidebarHTML += `<button data-category="${category}" class="category-btn block w-full text-left px-4 py-2 rounded-md transition-all duration-200 ${activeClass}">${category}</button>`;
+            });
+            sidebarHTML += `</nav>`;
+            sidebarContainer.innerHTML = sidebarHTML;
+        };
+
+        const renderPrompts = () => {
+            const filtered = promptsData.filter(p => {
+                const matchesCategory = currentCategory === 'All' || p.category === currentCategory;
+                const matchesSearch = !currentSearchTerm || 
+                                      (p.title && p.title.toLowerCase().includes(currentSearchTerm)) || 
+                                      (p.prompt && p.prompt.toLowerCase().includes(currentSearchTerm));
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filtered.length === 0) {
+                promptsGrid.innerHTML = `<div class="col-span-full text-center py-16 bg-gray-800 rounded-lg"><h3 class="text-2xl font-bold text-white">No Prompts Found</h3><p class="text-gray-400 mt-2">Try adjusting your filters.</p></div>`;
+                return;
+            }
+
+            promptsGrid.innerHTML = filtered.map(prompt => {
+                const thumbnail = prompt.imageUrls && prompt.imageUrls[0] ? prompt.imageUrls[0] : 'https://placehold.co/600x400/1f2937/ffffff?text=No+Image';
+                const imageCount = prompt.imageUrls ? prompt.imageUrls.length : 0;
+                return `
+                    <div class="bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 group flex flex-col">
+                        <div class="relative">
+                            <img src="${thumbnail}" class="prompt-image w-full h-48 object-cover cursor-pointer" data-images='${JSON.stringify(prompt.imageUrls || [])}'>
+                            ${prompt.model ? `<div class="absolute top-2 left-2 bg-indigo-600 bg-opacity-80 text-white text-xs font-bold px-2 py-1 rounded-full">${prompt.model}</div>` : ''}
+                            ${imageCount > 1 ? `<div class="absolute top-2 right-2 bg-black bg-opacity-60 text-white text-xs font-bold px-2 py-1 rounded-full">${imageCount} Images</div>` : ''}
+                        </div>
+                        <div class="p-5 flex flex-col flex-grow">
+                            <h3 class="text-xl font-bold text-white mb-2">${prompt.title || ''}</h3>
+                            <p class="text-gray-400 text-sm flex-grow mb-4 line-clamp-3">${prompt.prompt || ''}</p>
+                            <div class="mt-auto grid grid-cols-3 gap-2">
+                                <button class="copy-btn px-4 py-2 rounded-md bg-indigo-600 text-white hover:bg-indigo-700" data-prompt="${prompt.prompt || ''}">Copy</button>
+                                <button class="edit-btn px-4 py-2 rounded-md bg-gray-600 text-white hover:bg-gray-700" data-id="${prompt.id}">Edit</button>
+                                <button class="delete-btn px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700" data-id="${prompt.id}">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        };
+        
+        const renderAll = () => {
+            renderSidebar();
+            renderPrompts();
+            addEventListeners(); // Re-add listeners after re-rendering
+        };
+
+        // --- 5. PAGE NAVIGATION ---
+        
+        const showPage = (pageId) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        };
+
+        const showFormForAdd = () => {
+            form.reset();
+            formTitle.textContent = 'Add a New Prompt';
+            document.getElementById('edit-prompt-id').value = '';
+            
+            const categories = [...new Set(promptsData.map(p => p.category))];
+            categoryDatalist.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+
+            showPage('form-page');
+        };
+
+        const showFormForEdit = (id) => {
+            const prompt = promptsData.find(p => p.id === id);
+            if (!prompt) return;
+
+            form.reset();
+            formTitle.textContent = 'Edit Prompt';
+            document.getElementById('edit-prompt-id').value = prompt.id;
+            document.getElementById('title').value = prompt.title;
+            document.getElementById('category').value = prompt.category;
+            document.getElementById('model').value = prompt.model;
+            document.getElementById('prompt').value = prompt.prompt;
+            document.getElementById('imageUrls').value = prompt.imageUrls.join('\n');
+            
+            const categories = [...new Set(promptsData.map(p => p.category))];
+            categoryDatalist.innerHTML = categories.map(c => `<option value="${c}">`).join('');
+
+            showPage('form-page');
+        };
+
+        // --- 6. DATA MANIPULATION ---
+        
+        const saveData = () => {
+            // In this HTML version, we cannot write back to the prompts.json file.
+            // Changes only exist in memory for the current session.
+            console.log("Data changed in memory. Refreshing the page will revert all changes.");
+        };
+
+        const addPrompt = (data) => {
+            const newId = promptsData.length > 0 ? Math.max(...promptsData.map(p => p.id)) + 1 : 1;
+            const newPrompt = { id: newId, ...data };
+            promptsData.push(newPrompt);
+            saveData();
+        };
+
+        const updatePrompt = (id, data) => {
+            const index = promptsData.findIndex(p => p.id === id);
+            if (index > -1) {
+                promptsData[index] = { id, ...data };
+                saveData();
+            }
+        };
+
+        const deletePrompt = (id) => {
+            promptsData = promptsData.filter(p => p.id !== id);
+            saveData();
+        };
+
+        // --- 7. EVENT LISTENERS ---
+        
+        function addEventListeners() {
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    currentCategory = e.target.dataset.category;
+                    renderAll();
+                };
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.onclick = (e) => showFormForEdit(parseInt(e.target.dataset.id));
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    if (confirm('Are you sure you want to delete this prompt?')) {
+                        deletePrompt(parseInt(e.target.dataset.id));
+                        renderAll();
+                    }
+                };
+            });
+            
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.onclick = (e) => {
+                    navigator.clipboard.writeText(e.target.dataset.prompt);
+                    e.target.textContent = 'Copied!';
+                    setTimeout(() => e.target.textContent = 'Copy', 2000);
+                };
+            });
+
+            // Image Modal Listeners
+            const modalImg = document.getElementById('modal-img');
+            const modalPrev = document.getElementById('modal-prev');
+            const modalNext = document.getElementById('modal-next');
+            let currentImages = [];
+            let currentIndex = 0;
+
+            const showImage = (index) => {
+                modalImg.src = currentImages[index];
+                currentIndex = index;
+                modalPrev.style.display = index > 0 ? 'block' : 'none';
+                modalNext.style.display = index < currentImages.length - 1 ? 'block' : 'none';
+            };
+
+            document.querySelectorAll('.prompt-image').forEach(image => {
+                image.addEventListener('click', (e) => {
+                    currentImages = JSON.parse(e.target.dataset.images);
+                    if (currentImages && currentImages.length > 0) {
+                        showImage(0);
+                        imageModal.classList.remove('hidden');
+                    }
+                });
+            });
+            
+            modalPrev.addEventListener('click', (e) => { e.stopPropagation(); if (currentIndex > 0) showImage(currentIndex - 1); });
+            modalNext.addEventListener('click', (e) => { e.stopPropagation(); if (currentIndex < currentImages.length - 1) showImage(currentIndex + 1); });
+            
+            const closeModal = () => imageModal.classList.add('hidden');
+            imageModal.addEventListener('click', closeModal);
+            document.getElementById('modal-close').addEventListener('click', closeModal);
+        }
+
+        // Initial setup
+        addNewPromptBtn.onclick = showFormForAdd;
+
+        document.querySelectorAll('.cancel-btn').forEach(btn => {
+            btn.onclick = () => showPage('main-page');
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            currentSearchTerm = e.target.value.toLowerCase();
+            renderPrompts();
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const data = {
+                title: formData.get('title'),
+                category: formData.get('category'),
+                model: formData.get('model'),
+                prompt: formData.get('prompt'),
+                imageUrls: formData.get('imageUrls').split('\n').map(url => url.trim()).filter(url => url)
+            };
+            
+            const id = parseInt(formData.get('id'));
+            if (id) {
+                updatePrompt(id, data);
+            } else {
+                addPrompt(data);
+            }
+            
+            showPage('main-page');
+            renderAll();
+        });
+
+        // --- 8. INITIAL RENDER ---
+        renderAll();
+
+    });
+    </script>
+
+</body>
+</html>
